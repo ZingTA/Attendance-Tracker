@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Tracker</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    /* Hide number input spinners */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-[#080c14] text-slate-100 h-screen w-screen overflow-hidden flex flex-col p-2 sm:p-4 select-none relative">
+
+  <!-- Ambient Backdrop Glows -->
+  <div class="absolute -top-24 -left-24 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Main Viewport Box (Strictly fits 100vh with no scrollbar) -->
+  <main class="w-full h-full max-w-6xl mx-auto flex flex-col justify-between relative z-10 gap-2 sm:gap-3 py-1">
+
+    <!-- Top Integrated Toolbar & Global Timestamp (Completely headerless) -->
+    <div class="shrink-0 flex items-center justify-between gap-2 bg-slate-900/60 border border-slate-800/80 rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-md">
+      
+      <!-- Prominent Last Entry Date & Time Display -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 flex items-center justify-center shrink-0">
+          <i data-lucide="clock" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400">Last Entry</span>
+            <span id="time-relative-chip" class="text-[9px] px-1.5 py-0.5 rounded-full font-mono-num font-medium bg-slate-800 text-slate-400 border border-slate-700/60 hidden sm:inline-block">Never</span>
+          </div>
+          <div id="last-entry-display" class="text-xs sm:text-sm font-semibold font-mono-num text-slate-200 truncate">
+            No entries recorded yet
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Summary & Reset Button -->
+      <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+        <!-- Compact Aggregate Metric -->
+        <div class="hidden sm:flex items-center gap-3 pr-3 border-r border-slate-800">
+          <div class="text-right">
+            <div class="text-[10px] text-slate-400 uppercase font-medium">Aggregate</div>
+            <div class="flex items-center gap-1.5 justify-end">
+              <span id="global-total-classes" class="text-xs font-mono-num font-semibold text-slate-300">0 classes</span>
+              <span id="global-pct" class="text-xs font-bold font-mono-num text-emerald-400">100%</span>
+            </div>
+          </div>
+          <span id="global-badge" class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            Ok
+          </span>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="btn-open-reset" title="Reset all records" class="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 bg-slate-950/70 hover:text-rose-400 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/30 transition-all duration-200 shadow-sm active:scale-95">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 transition-transform duration-300 group-hover:-rotate-90"></i>
+          <span class="text-[11px] uppercase tracking-wider">Reset</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5 Subjects Dynamic Grid (Strictly fills height with no scrolling) -->
+    <div id="subjects-container" class="flex-1 grid grid-rows-5 gap-2 sm:gap-2.5 min-h-0">
+      <!-- Generated via JS -->
+    </div>
+
+  </main>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="reset-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+    <div id="reset-modal-box" class="bg-[#0d121e] border border-slate-800 rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-200">
+      <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center mb-3">
+        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+      </div>
+      <h3 class="text-sm sm:text-base font-bold text-white mb-1">Reset Attendance Records?</h3>
+      <p class="text-xs text-slate-400 leading-relaxed mb-5">
+        This will clear all attended and absent counts and wipe the recorded timestamp history. This action cannot be undone.
+      </p>
+      <div class="flex items-center justify-end gap-2.5">
+        <button id="btn-cancel-reset" class="px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800 transition-colors">
+          Cancel
+        </button>
+        <button id="btn-confirm-reset" class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 active:scale-95 transition-all">
+          Yes, Reset All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 5 Required Subjects
+    const DEFAULT_SUBJECTS = [
+      { id: 'fin', name: 'Finance', code: 'FIN', attended: 0, absent: 0, lastEntry: null },
+      { id: 'mkt', name: 'Mkt Mgt', code: 'MKT', attended: 0, absent: 0, lastEntry: null },
+      { id: 'law', name: 'Labor law', code: 'LAW', attended: 0, absent: 0, lastEntry: null },
+      { id: 'mis', name: 'Mgt Info Sys', code: 'MIS', attended: 0, absent: 0, lastEntry: null },
+      { id: 'sme', name: 'SME Mgt', code: 'SME', attended: 0, absent: 0, lastEntry: null }
+    ];
+
+    const STORAGE_KEY = 'attendance_tracker_v3_timestamp';
+
+    let state = loadInitialState();
+
+    function loadInitialState() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const subjects = DEFAULT_SUBJECTS.map(def => {
+            const found = (parsed.subjects || []).find(p => p.id === def.id || p.name.toLowerCase() === def.name.toLowerCase());
+            return {
+              ...def,
+              attended: found && typeof found.attended === 'number' ? Math.max(0, found.attended) : 0,
+              absent: found && typeof found.absent === 'number' ? Math.max(0, found.absent) : 0,
+              lastEntry: found && found.lastEntry ? found.lastEntry : null
+            };
+          });
+          return {
+            subjects,
+            lastGlobalEntry: parsed.lastGlobalEntry || null
+          };
+        }
+      } catch (e) {
+        console.error('Error reading localStorage:', e);
+      }
+      return {
+        subjects: JSON.parse(JSON.stringify(DEFAULT_SUBJECTS)),
+        lastGlobalEntry: null
+      };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Error writing to localStorage:', e);
+      }
+    }
+
+    // Format human-friendly timestamp (e.g., "Oct 25, 2026 at 6:27:14 PM")
+    function formatFullTimestamp(isoString) {
+      if (!isoString) return 'No entries recorded yet';
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return 'No entries recorded yet';
+      
+      return d.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    }
+
+    // Relative helper (e.g. "Just now", "2m ago")
+    function getRelativeTimeString(isoString) {
+      if (!isoString) return 'Never';
+      const d = new Date(isoString);
+      const diffSecs = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diffSecs < 5) return 'Just now';
+      if (diffSecs < 60) return `${diffSecs}s ago`;
+      const diffMins = Math.floor(diffSecs / 60);
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    }
+
+    // Status Rules:
+    // >= 80%: Ok
+    // >= 70%: Be careful
+    // < 70%: Warning
+    // Attendance + Absent = 100%
+    function calculateStatus(attended, absent) {
+      const total = attended + absent;
+      if (total === 0) {
+        return {
+          pct: 100,
+          absentPct: 0,
+          total: 0,
+          status: 'Ok',
+          statusClass: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+          barColor: 'bg-emerald-500 shadow-sm shadow-emerald-500/40',
+          ringColor: 'hover:border-emerald-500/30',
+          advice: 'Target reached · Safe margin'
+        };
+      }
+
+      const pct = (attended / total) * 100;
+      const absentPct = 100 - pct;
+
+      if (pct >= 80) {
+        // Safe margin calculation: how many classes can be missed before falling below 80%?
+        // (attended) / (total + m) >= 0.8  => 0.8*(total + m) <= attended => m <= (attended - 0.8*total) / 0.8
+        const canMiss = Math.floor((attended - 0.8 * total) / 0.8);
+        const advice = canMiss > 0 
+          ? `Safe margin: can miss ${canMiss} ${canMiss === 1 ? 'class' : 'classes'}` 
+          : `At threshold · Cannot miss next class`;
+
+        return {
+          pct,
+          absentPct,
+          total,
+          status: 'Ok',
+          statusClass: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+          barColor: 'bg-emerald-500 shadow-sm shadow-emerald-500/50',
+          ringColor: 'hover:border-emerald-500/40',
+          advice
+        };
+      } else if (pct >= 70) {
+        // Next best is 80% (Ok)
+        // (A + x) / (A + B + x) >= 0.8 => x >= ceil(4 * B - A)
+        const needed = Math.max(1, Math.ceil(4 * absent - attended));
+        return {
+          pct,
+          absentPct,
+          total,
+          status: 'Be careful',
+          statusClass: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
+          barColor: 'bg-amber-500 shadow-sm shadow-amber-500/50',
+          ringColor: 'hover:border-amber-500/40',
+          advice: `Need ${needed} more ${needed === 1 ? 'class' : 'classes'} for Ok (80%)`
+        };
+      } else {
+        // Next best is 70% (Be careful)
+        // (A + x) / (A + B + x) >= 0.7 => x >= ceil((0.7 * (A + B) - A) / 0.3)
+        const needed = Math.max(1, Math.ceil((0.7 * (attended + absent) - attended) / 0.3));
+        return {
+          pct,
+          absentPct,
+          total,
+          status: 'Warning',
+          statusClass: 'bg-rose-500/10 text-rose-400 border border-rose-500/30',
+          barColor: 'bg-rose-500 shadow-sm shadow-rose-500/50',
+          ringColor: 'hover:border-rose-500/40',
+          advice: `Need ${needed} more ${needed === 1 ? 'class' : 'classes'} for Be careful (70%)`
+        };
+      }
+    }
+
+    function recordActivity(index, type) {
+      const now = new Date().toISOString();
+      state.lastGlobalEntry = {
+        timestamp: now,
+        subjectName: state.subjects[index].name,
+        type: type === 'attended' ? 'Present' : 'Absent'
+      };
+      state.subjects[index].lastEntry = now;
+      saveState();
+      render();
+    }
+
+    // Only PLUS (+) Action
+    window.incrementCount = function(index, type) {
+      if (state.subjects[index]) {
+        state.subjects[index][type] = (state.subjects[index][type] || 0) + 1;
+        recordActivity(index, type);
+      }
+    };
+
+    // Direct input change
+    window.handleDirectInput = function(index, type, val) {
+      const parsed = parseInt(val, 10);
+      if (state.subjects[index]) {
+        const newVal = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+        if (state.subjects[index][type] !== newVal) {
+          state.subjects[index][type] = newVal;
+          recordActivity(index, type);
+        }
+      }
+    };
+
+    function render() {
+      const container = document.getElementById('subjects-container');
+      container.innerHTML = '';
+
+      let totalAttended = 0;
+      let totalAbsent = 0;
+
+      // Update Global Last Entry Display
+      const lastEntryEl = document.getElementById('last-entry-display');
+      const timeRelChip = document.getElementById('time-relative-chip');
+
+      if (state.lastGlobalEntry && state.lastGlobalEntry.timestamp) {
+        const fullStr = formatFullTimestamp(state.lastGlobalEntry.timestamp);
+        lastEntryEl.innerHTML = `
+          <span class="text-slate-100 font-bold">${fullStr}</span> 
+          <span class="text-slate-400 font-normal hidden sm:inline">(${state.lastGlobalEntry.subjectName}: +1 ${state.lastGlobalEntry.type})</span>
+        `;
+        timeRelChip.textContent = getRelativeTimeString(state.lastGlobalEntry.timestamp);
+        timeRelChip.classList.remove('hidden');
+      } else {
+        lastEntryEl.textContent = 'No entries recorded yet';
+        timeRelChip.classList.add('hidden');
+      }
+
+      state.subjects.forEach((sub, idx) => {
+        totalAttended += sub.attended;
+        totalAbsent += sub.absent;
+
+        const meta = calculateStatus(sub.attended, sub.absent);
+        const subRelativeTime = sub.lastEntry ? getRelativeTimeString(sub.lastEntry) : null;
+
+        const row = document.createElement('div');
+        row.className = `group bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 ${meta.ringColor} rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 transition-all duration-200 backdrop-blur-md flex items-center justify-between gap-2 sm:gap-4`;
+
+        row.innerHTML = `
+          <!-- Subject Info & Code + Per-Subject Timestamp -->
+          <div class="w-[28%] sm:w-[25%] flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-slate-800/90 border border-slate-700/60 flex items-center justify-center font-mono-num font-bold text-xs text-indigo-400 shrink-0">
+              ${sub.code}
+            </div>
+            <div class="min-w-0 truncate">
+              <h2 class="text-xs sm:text-sm font-bold text-slate-100 tracking-tight truncate">${sub.name}</h2>
+              <div class="text-[10px] sm:text-[11px] font-mono-num text-slate-400 flex items-center gap-1.5">
+                <span>Total: <strong class="text-slate-200">${sub.attended + sub.absent}</strong></span>
+                ${subRelativeTime ? `<span class="hidden md:inline text-[9px] text-slate-500 font-medium">· Updated ${subRelativeTime}</span>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons: Only PLUS (+), Direct Editable Number Input -->
+          <div class="flex items-center gap-2 sm:gap-4 justify-center">
+            
+            <!-- Attended Quick Tap -->
+            <div class="flex items-center bg-slate-950/60 border border-slate-800/80 rounded-lg p-0.5 sm:p-1 hover:border-emerald-500/40 transition-colors">
+              <span class="text-[10px] font-bold text-emerald-400/80 uppercase px-1.5 hidden sm:inline">Att</span>
+              <input 
+                type="number" 
+                min="0" 
+                value="${sub.attended}" 
+                onchange="handleDirectInput(${idx}, 'attended', this.value)"
+                class="w-8 sm:w-11 h-6 sm:h-7 bg-transparent text-center font-mono-num font-bold text-xs sm:text-sm text-emerald-400 focus:outline-none focus:bg-slate-800 rounded"
+              />
+              <button 
+                onclick="incrementCount(${idx}, 'attended')" 
+                title="Add 1 Attended class"
+                class="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 flex items-center justify-center text-xs font-bold transition-all active:scale-95 shadow-sm shadow-emerald-500/10">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Absent Quick Tap -->
+            <div class="flex items-center bg-slate-950/60 border border-slate-800/80 rounded-lg p-0.5 sm:p-1 hover:border-rose-500/40 transition-colors">
+              <span class="text-[10px] font-bold text-rose-400/80 uppercase px-1.5 hidden sm:inline">Abs</span>
+              <input 
+                type="number" 
+                min="0" 
+                value="${sub.absent}" 
+                onchange="handleDirectInput(${idx}, 'absent', this.value)"
+                class="w-8 sm:w-11 h-6 sm:h-7 bg-transparent text-center font-mono-num font-bold text-xs sm:text-sm text-rose-400 focus:outline-none focus:bg-slate-800 rounded"
+              />
+              <button 
+                onclick="incrementCount(${idx}, 'absent')" 
+                title="Add 1 Absent class"
+                class="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 flex items-center justify-center text-xs font-bold transition-all active:scale-95 shadow-sm shadow-rose-500/10">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Rate, Progress Bar, & Next Status Guidance (No Absent % display) -->
+          <div class="w-[34%] sm:w-[35%] flex flex-col justify-center gap-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs sm:text-sm font-extrabold font-mono-num text-white">${meta.pct.toFixed(0)}%</span>
+              <span class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${meta.statusClass}">
+                ${meta.status}
+              </span>
+            </div>
+
+            <!-- Attended Progress Bar -->
+            <div class="w-full h-1.5 sm:h-2 bg-slate-800 rounded-full overflow-hidden flex">
+              <div class="${meta.barColor} h-full transition-all duration-300" style="width: ${meta.pct}%"></div>
+            </div>
+
+            <!-- Actionable Next Status Guidance Under Progress Bar -->
+            <div class="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] leading-tight">
+              <span class="truncate text-slate-300 font-medium">${meta.advice}</span>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(row);
+      });
+
+      // Update Top Summary Strip
+      const grandTotal = totalAttended + totalAbsent;
+      const grandMeta = calculateStatus(totalAttended, totalAbsent);
+
+      document.getElementById('global-total-classes').textContent = `${grandTotal} classes`;
+      document.getElementById('global-pct').textContent = `${grandMeta.pct.toFixed(0)}%`;
+      const globalBadge = document.getElementById('global-badge');
+      globalBadge.className = `text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${grandMeta.statusClass}`;
+      globalBadge.textContent = grandMeta.status;
+
+      lucide.createIcons();
+    }
+
+    // Modal Confirmation for Reset
+    const modal = document.getElementById('reset-modal');
+    const modalBox = document.getElementById('reset-modal-box');
+    const openBtn = document.getElementById('btn-open-reset');
+    const cancelBtn = document.getElementById('btn-cancel-reset');
+    const confirmBtn = document.getElementById('btn-confirm-reset');
+
+    function openResetDialog() {
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-95');
+      modalBox.classList.add('scale-100');
+    }
+
+    function closeResetDialog() {
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-100');
+      modalBox.classList.add('scale-95');
+    }
+
+    openBtn.addEventListener('click', openResetDialog);
+    cancelBtn.addEventListener('click', closeResetDialog);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeResetDialog();
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      state = {
+        subjects: DEFAULT_SUBJECTS.map(s => ({ ...s, attended: 0, absent: 0, lastEntry: null })),
+        lastGlobalEntry: null
+      };
+      saveState();
+      render();
+      closeResetDialog();
+    });
+
+    // Auto-refresh relative time display every 30 seconds
+    setInterval(() => {
+      if (state.lastGlobalEntry && state.lastGlobalEntry.timestamp) {
+        document.getElementById('time-relative-chip').textContent = getRelativeTimeString(state.lastGlobalEntry.timestamp);
+      }
+    }, 30000);
+
+    window.onload = function() {
+      render();
+    };
+  </script>
+</body>
+</html>
