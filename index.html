@@ -8,9 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- QRCode.js for generating device pairing QR codes -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Fonts -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -23,6 +21,13 @@
           fontFamily: {
             sans: ['"Plus Jakarta Sans"', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
           }
         }
       }
@@ -30,7 +35,23 @@
   </script>
 
   <style>
-    /* Number input spin button removal */
+    /* Custom scrollbar styling if mobile expands */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.4);
+    }
+    
+    /* Hide number spinner controls */
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { 
       -webkit-appearance: none; 
@@ -40,8 +61,14 @@
       -moz-appearance: textfield;
     }
 
-    /* Dynamic Viewport Rules */
-    .app-viewport {
+    /* Touch ergonomics */
+    .touch-btn {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* Support Dynamic Viewport Height */
+    .dynamic-viewport {
       min-height: 100vh;
       min-height: 100dvh;
       max-height: 100vh;
@@ -49,55 +76,34 @@
     }
 
     @media (max-width: 767px) {
-      .app-viewport {
+      .dynamic-viewport {
         max-height: none;
         height: auto;
       }
     }
-
-    .touch-btn {
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-
-    /* QR Code Canvas container styling */
-    #qrcode-canvas img, #qrcode-canvas canvas {
-      margin: 0 auto;
-      border-radius: 12px;
-      padding: 8px;
-      background: #ffffff;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-    }
   </style>
 </head>
-<body class="bg-[#070b14] text-slate-100 font-sans app-viewport flex flex-col antialiased relative overflow-x-hidden md:overflow-hidden p-2 sm:p-3.5">
+<body class="bg-[#090d16] text-slate-100 font-sans selection:bg-indigo-500/30 dynamic-viewport flex flex-col antialiased relative overflow-x-hidden md:overflow-hidden p-2.5 sm:p-4">
 
-  <!-- Ambient background glow elements -->
-  <div class="fixed top-0 left-1/4 w-80 h-80 bg-indigo-600/10 rounded-full blur-[110px] pointer-events-none -z-10"></div>
-  <div class="fixed bottom-0 right-1/4 w-80 h-80 bg-emerald-600/10 rounded-full blur-[110px] pointer-events-none -z-10"></div>
-
-  <!-- Toast Notification System -->
-  <div id="toast" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-xl shadow-indigo-600/40 border border-indigo-400/30 flex items-center gap-2 opacity-0 -translate-y-4 pointer-events-none transition-all duration-300">
-    <i data-lucide="check-circle" class="w-4 h-4"></i>
-    <span id="toast-text">Success</span>
-  </div>
+  <!-- Ambient background glow effects -->
+  <div class="fixed top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+  <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
   <!-- Main Container -->
-  <div class="w-full max-w-6xl mx-auto flex-1 flex flex-col justify-between gap-2 sm:gap-2.5 min-h-0">
+  <div class="w-full max-w-6xl mx-auto flex-1 flex flex-col justify-between gap-2.5 sm:gap-3 min-h-0">
 
-    <!-- Top Compact Command Strip (Headerless design: purely operational metadata & sync bar) -->
-    <header class="shrink-0 bg-slate-900/80 border border-slate-800/90 rounded-2xl p-2 sm:px-3.5 sm:py-2 backdrop-blur-xl shadow-lg shadow-black/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+    <!-- Top Compact Status & Timestamp Toolbar (No header banner) -->
+    <header class="shrink-0 bg-slate-900/70 border border-slate-800/90 rounded-2xl p-2.5 sm:px-4 sm:py-2.5 backdrop-blur-xl shadow-lg shadow-black/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
       
-      <!-- Last Entry Information -->
+      <!-- Last Entry Display -->
       <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400 flex items-center justify-center shrink-0">
-          <i data-lucide="clock-3" class="w-4 h-4"></i>
+        <div class="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400 flex items-center justify-center shrink-0">
+          <i data-lucide="clock" class="w-4 h-4"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-1.5">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Last Entry</span>
-            <span id="time-relative-chip" class="text-[8px] sm:text-[9px] px-1.5 py-0.2 rounded font-mono font-medium bg-slate-800 text-indigo-300 border border-slate-700/60 hidden">Never</span>
-            <span id="cloud-sync-status-indicator" class="hidden text-[8px] px-1.5 py-0.2 rounded font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">Cloud Active</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Last Entry</span>
+            <span id="time-relative-chip" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-medium bg-slate-800 text-indigo-300 border border-slate-700/60 hidden">Never</span>
           </div>
           <div id="last-entry-display" class="text-xs sm:text-sm font-semibold font-mono text-slate-200 truncate">
             No entries recorded yet
@@ -105,160 +111,51 @@
         </div>
       </div>
 
-      <!-- Controls: Aggregate Score, Device Sync Trigger, and Reset Button -->
-      <div class="flex items-center justify-between sm:justify-end gap-2 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
-        <!-- Global summary badge -->
-        <div class="flex items-center gap-2 bg-slate-950/60 border border-slate-800/90 rounded-xl px-2.5 py-1">
+      <!-- Aggregate Status Pill & Reset Button -->
+      <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
+        <!-- Global Summary -->
+        <div class="flex items-center gap-2 bg-slate-950/50 border border-slate-800/80 rounded-xl px-2.5 py-1 sm:py-1.5">
           <div class="flex flex-col text-right">
-            <span class="text-[8px] text-slate-400 font-semibold uppercase tracking-wider">Overall</span>
+            <span class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Overall</span>
             <div class="flex items-center gap-1.5 font-mono">
               <span id="global-classes" class="text-xs font-semibold text-slate-300">0 classes</span>
               <span class="text-slate-600">·</span>
               <span id="global-pct" class="text-xs font-bold text-emerald-400">100%</span>
             </div>
           </div>
-          <span id="global-badge" class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+          <span id="global-badge" class="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
             Ok
           </span>
         </div>
 
-        <!-- Sync PC & Phone Button (Prominent) -->
-        <button id="btn-open-sync" class="touch-btn group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-200 bg-indigo-600/20 hover:bg-indigo-600/35 border border-indigo-500/40 hover:border-indigo-400 shadow-sm shadow-indigo-500/20 active:scale-95 transition-all">
-          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform"></i>
-          <span class="tracking-wide text-[11px] uppercase font-bold">Sync PC & Mobile</span>
-        </button>
-
         <!-- Reset Button -->
-        <button id="btn-open-reset" title="Reset all attendance" class="touch-btn group flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-rose-400 bg-slate-950/50 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/30 transition-all active:scale-95">
+        <button id="btn-open-reset" class="touch-btn group flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-rose-400 bg-slate-950/60 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/30 transition-all duration-200 active:scale-95">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 transition-transform duration-300 group-hover:-rotate-90"></i>
-          <span class="tracking-wide text-[10px] uppercase font-bold hidden sm:inline">Reset</span>
+          <span class="tracking-wide text-[11px] uppercase font-bold">Reset</span>
         </button>
       </div>
     </header>
 
-    <!-- Subjects Grid / Cards Section -->
-    <!-- PC: Fits 100vh using dynamic md:grid md:grid-rows-5. Mobile: Ergonomic touch cards stack -->
-    <div id="subjects-container" class="flex-1 flex flex-col md:grid md:grid-rows-5 gap-2 sm:gap-2.5 min-h-0 overflow-y-auto md:overflow-y-hidden pb-3 md:pb-0 pr-0.5">
-      <!-- Populated dynamically via JS -->
+    <!-- Subjects Grid / Cards View -->
+    <!-- Desktop: grid-rows-5 inside 100vh | Mobile: ergonomic cards stack -->
+    <div id="subjects-container" class="flex-1 flex flex-col md:grid md:grid-rows-5 gap-2.5 sm:gap-2.5 min-h-0 overflow-y-auto md:overflow-y-hidden pb-4 md:pb-0 pr-0.5">
+      <!-- Dynamic Subject Rows populated by JS -->
     </div>
 
   </div>
 
-  <!-- ================= SYNC MODAL (Solves LocalStorage mismatch) ================= -->
-  <div id="sync-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-200">
-    <div id="sync-modal-box" class="bg-[#0d121f] border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl transform scale-95 transition-transform duration-200 flex flex-col gap-4">
-      
-      <!-- Modal Header -->
-      <div class="flex items-start justify-between">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <h3 class="text-base sm:text-lg font-bold text-white">Device Synchronization Hub</h3>
-          </div>
-          <p class="text-xs text-slate-400 mt-1">
-            Why the mismatch? <strong class="text-slate-300">LocalStorage is bound to a single device</strong>. Use any of the 3 methods below to synchronize your PC and phone instantly:
-          </p>
-        </div>
-        <button id="btn-close-sync" class="touch-btn text-slate-400 hover:text-white p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <!-- Sync Tabs -->
-      <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-        <button id="tab-btn-qr" onclick="switchSyncTab('qr')" class="py-1.5 text-[11px] font-bold rounded-lg text-white bg-indigo-600 transition-all">1. QR / Link</button>
-        <button id="tab-btn-cloud" onclick="switchSyncTab('cloud')" class="py-1.5 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white transition-all">2. Room Code</button>
-        <button id="tab-btn-code" onclick="switchSyncTab('code')" class="py-1.5 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white transition-all">3. Quick Code</button>
-      </div>
-
-      <!-- TAB 1: Instant QR Code & Direct Share Link -->
-      <div id="sync-panel-qr" class="flex flex-col items-center gap-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
-        <p class="text-[11px] text-slate-300 text-center">
-          Point your phone camera at this QR code to open your current PC attendance directly on mobile.
-        </p>
-        
-        <div id="qrcode-canvas" class="flex items-center justify-center p-2 rounded-2xl bg-white shadow-xl"></div>
-
-        <div class="w-full flex flex-col gap-2 mt-1">
-          <button id="btn-copy-sync-link" class="touch-btn w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-indigo-600/30">
-            <i data-lucide="copy" class="w-4 h-4"></i>
-            <span>Copy Instant Link for WhatsApp / Email</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- TAB 2: Live Room Code (Cloud Sync via JSON Storage Key) -->
-      <div id="sync-panel-cloud" class="hidden flex-col gap-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
-        <p class="text-[11px] text-slate-300 leading-relaxed">
-          Use the same 6-character room code on both PC and mobile. Hit <strong>Push</strong> on the device you modified, then hit <strong>Pull</strong> on your other device.
-        </p>
-        
-        <div class="flex items-center gap-2">
-          <div class="relative flex-1">
-            <input 
-              type="text" 
-              id="room-code-input" 
-              maxlength="8" 
-              placeholder="e.g. ATT-99" 
-              class="w-full py-2 px-3 bg-slate-900 border border-slate-700 rounded-xl font-mono text-sm uppercase tracking-widest text-indigo-300 focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-          <button id="btn-gen-room" class="touch-btn px-3 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all">
-            Generate
-          </button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 mt-1">
-          <button id="btn-cloud-push" class="touch-btn py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
-            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-            <span>Push to Cloud</span>
-          </button>
-          <button id="btn-cloud-pull" class="touch-btn py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
-            <i data-lucide="download-cloud" class="w-4 h-4"></i>
-            <span>Pull from Cloud</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- TAB 3: Copy/Paste Raw Code -->
-      <div id="sync-panel-code" class="hidden flex-col gap-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
-        <p class="text-[11px] text-slate-300">
-          Copy this compact backup code and paste it on your other device:
-        </p>
-
-        <textarea 
-          id="export-import-textarea" 
-          rows="3" 
-          class="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-xl font-mono text-[10px] text-slate-300 focus:outline-none focus:border-indigo-500 select-all"
-        ></textarea>
-
-        <div class="grid grid-cols-2 gap-2">
-          <button id="btn-copy-code" class="touch-btn py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-            <span>Copy Code</span>
-          </button>
-          <button id="btn-apply-code" class="touch-btn py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5">
-            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-            <span>Apply Code</span>
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ================= RESET CONFIRMATION MODAL ================= -->
+  <!-- Reset Confirmation Modal -->
   <div id="reset-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
     <div id="reset-modal-box" class="bg-[#0f1422] border border-slate-800 rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-200">
-      <div class="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/25 flex items-center justify-center mb-3">
+      <div class="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/25 flex items-center justify-center mb-3.5">
         <i data-lucide="alert-triangle" class="w-5 h-5"></i>
       </div>
       <h3 class="text-base font-bold text-white mb-1">Reset All Attendance?</h3>
-      <p class="text-xs text-slate-400 leading-relaxed mb-4">
-        This will clear attendance and absence data for all 5 subjects and reset entry logs. This cannot be undone.
+      <p class="text-xs text-slate-400 leading-relaxed mb-5">
+        This will clear attendance and absence records for all 5 subjects and reset the timestamp history. This action cannot be reversed.
       </p>
       <div class="flex items-center justify-end gap-2.5">
-        <button id="btn-cancel-reset" class="touch-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 active:scale-95 transition-all">
+        <button id="btn-cancel-reset" class="touch-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800/80 active:scale-95 transition-all">
           Cancel
         </button>
         <button id="btn-confirm-reset" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 active:scale-95 transition-all">
@@ -269,116 +166,51 @@
   </div>
 
   <script>
-    // 5 Mandated Subjects
+    // 5 Specified Subjects
     const DEFAULT_SUBJECTS = [
       { id: 'fin', name: 'Finance', code: 'FIN', attended: 0, absent: 0, lastEntry: null },
-      { id: 'mkt', name: 'MKT MGT', code: 'MKT', attended: 0, absent: 0, lastEntry: null },
+      { id: 'mkt', name: 'Mkt Mgt', code: 'MKT', attended: 0, absent: 0, lastEntry: null },
       { id: 'law', name: 'Labor law', code: 'LAW', attended: 0, absent: 0, lastEntry: null },
-      { id: 'mis', name: 'MIS', code: 'MIS', attended: 0, absent: 0, lastEntry: null },
-      { id: 'sme', name: 'SME MGT', code: 'SME', attended: 0, absent: 0, lastEntry: null }
+      { id: 'mis', name: 'Mgt Info Sys', code: 'MIS', attended: 0, absent: 0, lastEntry: null },
+      { id: 'sme', name: 'SME Mgt', code: 'SME', attended: 0, absent: 0, lastEntry: null }
     ];
 
-    const STORAGE_KEY = 'attendance_tracker_v5_synced';
+    const STORAGE_KEY = 'attendance_tracker_v4_responsive';
     let state = loadInitialState();
-    let qrCodeInstance = null;
-
-    // Toast helper
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      const text = document.getElementById('toast-text');
-      text.textContent = message;
-      toast.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
-      toast.classList.add('opacity-100', 'translate-y-0');
-      setTimeout(() => {
-        toast.classList.remove('opacity-100', 'translate-y-0');
-        toast.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
-      }, 2600);
-    }
-
-    // Check URL query or hash for share link (?data=... or #data=...)
-    function parseUrlData() {
-      try {
-        const hash = window.location.hash;
-        const search = window.location.search;
-        let encoded = null;
-
-        if (hash && hash.includes('data=')) {
-          encoded = hash.split('data=')[1];
-        } else if (search && search.includes('data=')) {
-          const params = new URLSearchParams(search);
-          encoded = params.get('data');
-        }
-
-        if (encoded) {
-          const jsonStr = decodeURIComponent(atob(encoded));
-          const parsed = JSON.parse(jsonStr);
-          if (parsed && Array.isArray(parsed.subjects)) {
-            // Remove params from URL bar cleanly
-            window.history.replaceState(null, '', window.location.pathname);
-            return parsed;
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to parse URL import data:', e);
-      }
-      return null;
-    }
 
     function loadInitialState() {
-      // Priority 1: Check URL imported data (from QR code scan or share link)
-      const fromUrl = parseUrlData();
-      if (fromUrl) {
-        setTimeout(() => showToast('Synced data from shared link!'), 600);
-        return {
-          subjects: normalizeSubjects(fromUrl.subjects),
-          lastGlobalEntry: fromUrl.lastGlobalEntry || null,
-          roomCode: fromUrl.roomCode || generateRandomRoom()
-        };
-      }
-
-      // Priority 2: Check LocalStorage
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
+          const subjects = DEFAULT_SUBJECTS.map(def => {
+            const match = (parsed.subjects || []).find(p => p.id === def.id || p.name.toLowerCase() === def.name.toLowerCase());
+            return {
+              ...def,
+              attended: match && typeof match.attended === 'number' ? Math.max(0, match.attended) : 0,
+              absent: match && typeof match.absent === 'number' ? Math.max(0, match.absent) : 0,
+              lastEntry: match && match.lastEntry ? match.lastEntry : null
+            };
+          });
           return {
-            subjects: normalizeSubjects(parsed.subjects),
-            lastGlobalEntry: parsed.lastGlobalEntry || null,
-            roomCode: parsed.roomCode || generateRandomRoom()
+            subjects,
+            lastGlobalEntry: parsed.lastGlobalEntry || null
           };
         }
       } catch (e) {
         console.error('Storage reading error:', e);
       }
-
       return {
         subjects: JSON.parse(JSON.stringify(DEFAULT_SUBJECTS)),
-        lastGlobalEntry: null,
-        roomCode: generateRandomRoom()
+        lastGlobalEntry: null
       };
-    }
-
-    function normalizeSubjects(incomingList) {
-      return DEFAULT_SUBJECTS.map(def => {
-        const match = (incomingList || []).find(p => p.id === def.id || p.name.toLowerCase() === def.name.toLowerCase());
-        return {
-          ...def,
-          attended: match && typeof match.attended === 'number' ? Math.max(0, match.attended) : 0,
-          absent: match && typeof match.absent === 'number' ? Math.max(0, match.absent) : 0,
-          lastEntry: match && match.lastEntry ? match.lastEntry : null
-        };
-      });
-    }
-
-    function generateRandomRoom() {
-      return 'ATT-' + Math.floor(100 + Math.random() * 900);
     }
 
     function saveState() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch (e) {
-        console.error('Save state failed:', e);
+        console.error('Storage writing error:', e);
       }
     }
 
@@ -411,11 +243,11 @@
       return `${diffDays}d ago`;
     }
 
-    // Attendance rules:
-    // Attendance + Absent = 100%
-    // >= 80% : Ok
-    // >= 70% : Be careful
-    // < 70%  : Warning
+    // Attendance calculation logic
+    // Attendance % + Absent % = 100%
+    // >= 80%: Ok
+    // >= 70%: Be careful
+    // < 70%: Warning
     function calculateStatus(attended, absent) {
       const total = attended + absent;
       if (total === 0) {
@@ -425,7 +257,7 @@
           status: 'Ok',
           statusClass: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
           barColor: 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.35)]',
-          forecast: 'Safe buffer: start of term',
+          forecast: '100% attendance · Safe buffer',
           shortForecast: 'Buffer: safe'
         };
       }
@@ -433,7 +265,7 @@
       const pct = (attended / total) * 100;
 
       if (pct >= 80) {
-        // Safe buffer: can miss Y classes
+        // Safe buffer: how many consecutive classes can be missed while staying >= 80%
         // attended / (total + m) >= 0.8  =>  m <= (attended - 0.8*total) / 0.8
         const canMiss = Math.floor((attended - 0.8 * total) / 0.8);
         const forecast = canMiss > 0 
@@ -541,25 +373,26 @@
         const subRelative = sub.lastEntry ? getRelativeTimeString(sub.lastEntry) : null;
 
         const card = document.createElement('div');
-        card.className = `bg-slate-900/50 hover:bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 sm:px-4 sm:py-2 transition-all duration-200 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 shadow-sm hover:border-slate-700/80`;
+        // Desktop: sleek row inside h-screen grid. Mobile: touch-optimized card.
+        card.className = `bg-slate-900/50 hover:bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3 md:px-4 md:py-2 transition-all duration-200 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 shadow-sm hover:border-slate-700/80`;
 
         card.innerHTML = `
-          <!-- Left: Title, Code, Total & Mobile Badge -->
+          <!-- Row 1 (Mobile) / Left Section (Desktop): Title, Badge, Code, Timestamp -->
           <div class="flex items-center justify-between md:w-[26%] min-w-0">
             <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-xl bg-slate-800/90 border border-slate-700/60 font-mono font-bold text-xs text-indigo-400 flex items-center justify-center shrink-0">
+              <div class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-slate-800/90 border border-slate-700/60 font-mono font-bold text-xs text-indigo-400 flex items-center justify-center shrink-0">
                 ${sub.code}
               </div>
               <div class="min-w-0">
-                <h3 class="text-xs sm:text-sm font-bold text-slate-100 truncate">${sub.name}</h3>
-                <div class="flex items-center gap-1.5 text-[10px] font-mono text-slate-400">
+                <h3 class="text-xs md:text-sm font-bold text-slate-100 truncate">${sub.name}</h3>
+                <div class="flex items-center gap-1.5 text-[10px] md:text-[11px] font-mono text-slate-400">
                   <span>Total: <strong class="text-slate-200">${sub.attended + sub.absent}</strong></span>
                   ${subRelative ? `<span class="text-slate-500 font-sans hidden sm:inline">· ${subRelative}</span>` : ''}
                 </div>
               </div>
             </div>
 
-            <!-- Mobile Status Pill -->
+            <!-- Mobile Only: Quick Status Badge & Rate in top header row -->
             <div class="flex items-center gap-1.5 md:hidden">
               <span class="text-xs font-mono font-extrabold text-white">${meta.pct.toFixed(0)}%</span>
               <span class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${meta.statusClass}">
@@ -568,18 +401,19 @@
             </div>
           </div>
 
-          <!-- Controls Section: Only Plus (+) Buttons & Inputs -->
+          <!-- Controls Section: Only Plus Buttons & Inputs (Touch Ergonomic) -->
           <div class="grid grid-cols-2 gap-2 sm:gap-3 md:flex md:items-center md:gap-3 shrink-0">
-            <!-- Attended -->
+            
+            <!-- Attended Controls -->
             <div class="flex items-center justify-between bg-slate-950/70 border border-slate-800 rounded-xl p-1 sm:p-1.5 hover:border-emerald-500/40 transition-colors">
               <div class="flex items-center pl-1 sm:pl-1.5">
-                <span class="text-[9px] sm:text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider pr-1">Attended</span>
+                <span class="text-[9px] md:text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider pr-1">Attended</span>
                 <input 
                   type="number" 
                   min="0" 
                   value="${sub.attended}" 
                   onchange="handleDirectInput(${idx}, 'attended', this.value)"
-                  class="w-8 sm:w-10 h-7 md:h-6 bg-transparent text-center font-mono font-bold text-xs sm:text-sm text-emerald-300 focus:outline-none focus:bg-slate-800/80 rounded"
+                  class="w-8 sm:w-10 h-7 md:h-6 bg-transparent text-center font-mono font-bold text-xs md:text-sm text-emerald-300 focus:outline-none focus:bg-slate-800/80 rounded"
                 />
               </div>
               <button 
@@ -590,16 +424,16 @@
               </button>
             </div>
 
-            <!-- Absent -->
+            <!-- Absent Controls -->
             <div class="flex items-center justify-between bg-slate-950/70 border border-slate-800 rounded-xl p-1 sm:p-1.5 hover:border-rose-500/40 transition-colors">
               <div class="flex items-center pl-1 sm:pl-1.5">
-                <span class="text-[9px] sm:text-[10px] font-extrabold text-rose-400 uppercase tracking-wider pr-1">Absent</span>
+                <span class="text-[9px] md:text-[10px] font-extrabold text-rose-400 uppercase tracking-wider pr-1">Absent</span>
                 <input 
                   type="number" 
                   min="0" 
                   value="${sub.absent}" 
                   onchange="handleDirectInput(${idx}, 'absent', this.value)"
-                  class="w-8 sm:w-10 h-7 md:h-6 bg-transparent text-center font-mono font-bold text-xs sm:text-sm text-rose-300 focus:outline-none focus:bg-slate-800/80 rounded"
+                  class="w-8 sm:w-10 h-7 md:h-6 bg-transparent text-center font-mono font-bold text-xs md:text-sm text-rose-300 focus:outline-none focus:bg-slate-800/80 rounded"
                 />
               </div>
               <button 
@@ -609,25 +443,26 @@
                 <i data-lucide="plus" class="w-4 h-4 md:w-3.5 md:h-3.5 stroke-[2.5]"></i>
               </button>
             </div>
+
           </div>
 
-          <!-- Progress Bar & Target Forecast (Absent percentage removed completely) -->
+          <!-- Progress Bar & Next Best Status Forecast -->
           <div class="flex-1 md:max-w-xs flex flex-col justify-center gap-1.5">
-            <!-- Desktop Top Info -->
+            <!-- Desktop percentage & Status header -->
             <div class="hidden md:flex items-center justify-between">
-              <span class="text-xs sm:text-sm font-extrabold font-mono text-white">${meta.pct.toFixed(0)}%</span>
+              <span class="text-xs md:text-sm font-extrabold font-mono text-white">${meta.pct.toFixed(0)}%</span>
               <span class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${meta.statusClass}">
                 ${meta.status}
               </span>
             </div>
 
-            <!-- Single Attendance Progress Bar -->
-            <div class="w-full h-2 bg-slate-950/80 rounded-full overflow-hidden p-0.5 border border-slate-800/60">
+            <!-- Attendance Progress Bar (No absent percentage text) -->
+            <div class="w-full h-2 md:h-2 bg-slate-950/80 rounded-full overflow-hidden p-0.5 border border-slate-800/60">
               <div class="${meta.barColor} h-full rounded-full transition-all duration-300" style="width: ${meta.pct}%"></div>
             </div>
 
-            <!-- Forecast Text only -->
-            <div class="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] leading-tight">
+            <!-- Forecast Text for next best status -->
+            <div class="flex items-center justify-between gap-1 text-[10px] md:text-[11px] leading-tight">
               <span class="text-slate-300 font-medium truncate flex items-center gap-1">
                 <i data-lucide="sparkles" class="w-3 h-3 text-indigo-400 shrink-0"></i>
                 <span class="hidden sm:inline">${meta.forecast}</span>
@@ -654,253 +489,47 @@
       lucide.createIcons();
     }
 
-    // Generate Shareable URL
-    function generateShareUrl() {
-      const payload = {
-        subjects: state.subjects,
-        lastGlobalEntry: state.lastGlobalEntry,
-        roomCode: state.roomCode
-      };
-      const jsonStr = JSON.stringify(payload);
-      const encoded = btoa(encodeURIComponent(jsonStr));
-      const origin = window.location.origin + window.location.pathname;
-      return `${origin}#data=${encoded}`;
+    // Reset Modal logic
+    const modal = document.getElementById('reset-modal');
+    const modalBox = document.getElementById('reset-modal-box');
+    const openBtn = document.getElementById('btn-open-reset');
+    const cancelBtn = document.getElementById('btn-cancel-reset');
+    const confirmBtn = document.getElementById('btn-confirm-reset');
+
+    function openModal() {
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-95');
+      modalBox.classList.add('scale-100');
     }
 
-    // Refresh Sync Modal Assets
-    function refreshSyncModal() {
-      const shareUrl = generateShareUrl();
-      const codeArea = document.getElementById('export-import-textarea');
-      const roomInput = document.getElementById('room-code-input');
-
-      codeArea.value = JSON.stringify({
-        subjects: state.subjects,
-        lastGlobalEntry: state.lastGlobalEntry,
-        roomCode: state.roomCode
-      }, null, 2);
-
-      roomInput.value = state.roomCode || generateRandomRoom();
-
-      // Render fresh QR Code
-      const qrContainer = document.getElementById('qrcode-canvas');
-      qrContainer.innerHTML = '';
-      qrCodeInstance = new QRCode(qrContainer, {
-        text: shareUrl,
-        width: 170,
-        height: 170,
-        colorDark : "#0a0e1a",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.M
-      });
+    function closeModal() {
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-100');
+      modalBox.classList.add('scale-95');
     }
 
-    // Switch Modal Tabs
-    window.switchSyncTab = function(tab) {
-      const tabs = ['qr', 'cloud', 'code'];
-      tabs.forEach(t => {
-        const btn = document.getElementById(`tab-btn-${t}`);
-        const panel = document.getElementById(`sync-panel-${t}`);
-        if (t === tab) {
-          btn.className = 'py-1.5 text-[11px] font-bold rounded-lg text-white bg-indigo-600 transition-all';
-          panel.classList.remove('hidden');
-          panel.classList.add('flex');
-        } else {
-          btn.className = 'py-1.5 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white transition-all';
-          panel.classList.remove('flex');
-          panel.classList.add('hidden');
-        }
-      });
-    };
-
-    // Copy Sync Link helper
-    document.getElementById('btn-copy-sync-link').addEventListener('click', () => {
-      const url = generateShareUrl();
-      copyTextToClipboard(url);
-      showToast('Sync link copied! Open on your mobile device');
+    openBtn.addEventListener('click', openModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
     });
 
-    // Copy Raw Code
-    document.getElementById('btn-copy-code').addEventListener('click', () => {
-      const text = document.getElementById('export-import-textarea').value;
-      copyTextToClipboard(text);
-      showToast('Backup code copied to clipboard!');
-    });
-
-    // Apply Raw Code
-    document.getElementById('btn-apply-code').addEventListener('click', () => {
-      try {
-        const val = document.getElementById('export-import-textarea').value.trim();
-        const parsed = JSON.parse(val);
-        if (parsed && Array.isArray(parsed.subjects)) {
-          state.subjects = normalizeSubjects(parsed.subjects);
-          state.lastGlobalEntry = parsed.lastGlobalEntry || null;
-          if (parsed.roomCode) state.roomCode = parsed.roomCode;
-          saveState();
-          render();
-          closeSyncModal();
-          showToast('Data synced successfully!');
-        } else {
-          showToast('Invalid backup code structure');
-        }
-      } catch (e) {
-        showToast('Error parsing backup code');
-      }
-    });
-
-    // Room Generation
-    document.getElementById('btn-gen-room').addEventListener('click', () => {
-      state.roomCode = generateRandomRoom();
-      document.getElementById('room-code-input').value = state.roomCode;
-      saveState();
-      refreshSyncModal();
-      showToast(`Generated new Room: ${state.roomCode}`);
-    });
-
-    // Cloud Push Simulation (Free Key-Value storage via npoint.io or jsonbin or mock fallback)
-    document.getElementById('btn-cloud-push').addEventListener('click', async () => {
-      const room = document.getElementById('room-code-input').value.trim().toUpperCase() || state.roomCode;
-      state.roomCode = room;
-      saveState();
-
-      showToast(`Pushing data to room ${room}...`);
-
-      try {
-        // Public key-value store or fallback to room encoded hash
-        const response = await fetch(`https://api.restful-api.dev/objects`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: room,
-            data: {
-              subjects: state.subjects,
-              lastGlobalEntry: state.lastGlobalEntry,
-              updatedAt: new Date().toISOString()
-            }
-          })
-        }).catch(() => null);
-
-        // Also store room in localStorage
-        localStorage.setItem(`cloud_room_${room}`, JSON.stringify(state));
-        showToast(`Saved to Cloud Room: ${room}`);
-        document.getElementById('cloud-sync-status-indicator').classList.remove('hidden');
-      } catch (e) {
-        localStorage.setItem(`cloud_room_${room}`, JSON.stringify(state));
-        showToast(`Saved to local room cache: ${room}`);
-      }
-    });
-
-    // Cloud Pull Simulation
-    document.getElementById('btn-cloud-pull').addEventListener('click', async () => {
-      const room = document.getElementById('room-code-input').value.trim().toUpperCase();
-      if (!room) {
-        showToast('Please enter a room code');
-        return;
-      }
-
-      showToast(`Checking room ${room}...`);
-
-      // Check local cache first or online
-      const cached = localStorage.getItem(`cloud_room_${room}`);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          state.subjects = normalizeSubjects(parsed.subjects);
-          state.lastGlobalEntry = parsed.lastGlobalEntry || null;
-          state.roomCode = room;
-          saveState();
-          render();
-          closeSyncModal();
-          showToast(`Synced from Room: ${room}!`);
-          document.getElementById('cloud-sync-status-indicator').classList.remove('hidden');
-          return;
-        } catch(e) {}
-      }
-
-      showToast(`No cloud record found for ${room}. Push first from PC.`);
-    });
-
-    // Fallback-safe clipboard copy function
-    function copyTextToClipboard(text) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-      } else {
-        fallbackCopy(text);
-      }
-    }
-
-    function fallbackCopy(text) {
-      const temp = document.createElement('textarea');
-      temp.value = text;
-      temp.style.position = 'fixed';
-      temp.style.opacity = '0';
-      document.body.appendChild(temp);
-      temp.focus();
-      temp.select();
-      try {
-        document.execCommand('copy');
-      } catch (err) {
-        console.error('Fallback copy error:', err);
-      }
-      document.body.removeChild(temp);
-    }
-
-    // Modal Handlers
-    const syncModal = document.getElementById('sync-modal');
-    const syncModalBox = document.getElementById('sync-modal-box');
-    const resetModal = document.getElementById('reset-modal');
-    const resetModalBox = document.getElementById('reset-modal-box');
-
-    function openSyncModal() {
-      refreshSyncModal();
-      syncModal.classList.remove('opacity-0', 'pointer-events-none');
-      syncModalBox.classList.remove('scale-95');
-      syncModalBox.classList.add('scale-100');
-    }
-
-    function closeSyncModal() {
-      syncModal.classList.add('opacity-0', 'pointer-events-none');
-      syncModalBox.classList.remove('scale-100');
-      syncModalBox.classList.add('scale-95');
-    }
-
-    function openResetModal() {
-      resetModal.classList.remove('opacity-0', 'pointer-events-none');
-      resetModalBox.classList.remove('scale-95');
-      resetModalBox.classList.add('scale-100');
-    }
-
-    function closeResetModal() {
-      resetModal.classList.add('opacity-0', 'pointer-events-none');
-      resetModalBox.classList.remove('scale-100');
-      resetModalBox.classList.add('scale-95');
-    }
-
-    document.getElementById('btn-open-sync').addEventListener('click', openSyncModal);
-    document.getElementById('btn-close-sync').addEventListener('click', closeSyncModal);
-    syncModal.addEventListener('click', (e) => { if (e.target === syncModal) closeSyncModal(); });
-
-    document.getElementById('btn-open-reset').addEventListener('click', openResetModal);
-    document.getElementById('btn-cancel-reset').addEventListener('click', closeResetModal);
-    resetModal.addEventListener('click', (e) => { if (e.target === resetModal) closeResetModal(); });
-
-    document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+    confirmBtn.addEventListener('click', () => {
       state = {
         subjects: DEFAULT_SUBJECTS.map(s => ({ ...s, attended: 0, absent: 0, lastEntry: null })),
-        lastGlobalEntry: null,
-        roomCode: state.roomCode
+        lastGlobalEntry: null
       };
       saveState();
       render();
-      closeResetModal();
-      showToast('All attendance data reset');
+      closeModal();
     });
 
-    // Auto-update relative timestamps every 20 seconds
+    // Auto-update relative timestamps every 30 seconds
     setInterval(() => {
       if (state.lastGlobalEntry && state.lastGlobalEntry.timestamp) {
         document.getElementById('time-relative-chip').textContent = getRelativeTimeString(state.lastGlobalEntry.timestamp);
       }
-    }, 20000);
+    }, 30000);
 
     window.onload = function() {
       render();
